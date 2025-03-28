@@ -17,6 +17,7 @@ import org.springframework.stereotype.Service;
 import java.io.ByteArrayOutputStream;
 import java.nio.charset.StandardCharsets;
 import java.util.List;
+import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 @Service
@@ -31,12 +32,15 @@ public class TripService {
                 .orElseThrow(() -> new RuntimeException("Utente non trovato"));
         trip.setUser(user);
 
-        // ✅ Check se date sono nulle, allora imposta start = end = oggi
         if (trip.getStartDate() == null) {
             trip.setStartDate(java.time.LocalDate.now());
         }
         if (trip.getEndDate() == null) {
             trip.setEndDate(trip.getStartDate());
+        }
+
+        if (trip.getItineraryItems() != null) {
+            trip.getItineraryItems().forEach(item -> item.setTrip(trip));
         }
 
         return tripRepository.save(trip);
@@ -103,7 +107,8 @@ public class TripService {
                         trip.getEndDate(),
                         trip.getDescription(),
                         trip.getImageUrl(),
-                        trip.getUser().getUsername()
+                        trip.getUser().getUsername(),
+                        trip.getItineraryItems()
                 ))
                 .toList();
     }
@@ -112,13 +117,18 @@ public class TripService {
         List<TripExportResponse> trips = exportTrips(username);
 
         StringBuilder csv = new StringBuilder();
-        csv.append("Destinazione,Data Inizio,Data Fine,Itinerario\n");
+        csv.append("Destinazione,Data Inizio,Data Fine,Descrizione,Tappe\n");
 
         for (TripExportResponse trip : trips) {
+            String itinerary = trip.getItinerary().stream()
+                    .map(item -> item.getDate() + ": " + item.getTitle())
+                    .collect(Collectors.joining(" | "));
+
             csv.append(trip.getDestination()).append(",");
             csv.append(trip.getStartDate()).append(",");
             csv.append(trip.getEndDate()).append(",");
-            csv.append("\"").append(trip.getDescription() != null ? trip.getDescription().replace("\"", "\"\"") : "").append("\"\n");
+            csv.append("\"").append(trip.getDescription() != null ? trip.getDescription().replace("\"", "\"\"") : "").append("\"").append(",");
+            csv.append("\"").append(itinerary.replace("\"", "\"\"")).append("\"\n");
         }
 
         return csv.toString().getBytes(StandardCharsets.UTF_8);
@@ -135,29 +145,46 @@ public class TripService {
             document.open();
 
             Font titleFont = FontFactory.getFont(FontFactory.HELVETICA_BOLD, 18);
+            Font boldFont = FontFactory.getFont(FontFactory.HELVETICA_BOLD, 12);
+            Font normalFont = FontFactory.getFont(FontFactory.HELVETICA, 11);
+
             Paragraph title = new Paragraph("I miei viaggi", titleFont);
             title.setAlignment(Element.ALIGN_CENTER);
             document.add(title);
             document.add(Chunk.NEWLINE);
 
-            PdfPTable table = new PdfPTable(4);
-            table.setWidthPercentage(100);
-            table.setWidths(new int[]{3, 2, 2, 4});
-
-            Stream.of("Destinazione", "Inizio", "Fine", "Itinerario").forEach(header -> {
-                PdfPCell cell = new PdfPCell(new Phrase(header));
-                cell.setBackgroundColor(Color.LIGHT_GRAY);
-                table.addCell(cell);
-            });
-
             for (TripExportResponse trip : trips) {
-                table.addCell(trip.getDestination());
-                table.addCell(trip.getStartDate() != null ? trip.getStartDate().toString() : "");
-                table.addCell(trip.getEndDate() != null ? trip.getEndDate().toString() : "");
-                table.addCell(trip.getDescription() != null ? trip.getDescription() : "");
+                Paragraph tripTitle = new Paragraph(trip.getDestination() + " (" + trip.getStartDate() + " - " + trip.getEndDate() + ")", boldFont);
+                document.add(tripTitle);
+
+                if (trip.getDescription() != null) {
+                    document.add(new Paragraph("Descrizione: " + trip.getDescription(), normalFont));
+                }
+
+                if (trip.getItinerary() != null && !trip.getItinerary().isEmpty()) {
+                    document.add(new Paragraph("Tappe:", boldFont));
+                    PdfPTable table = new PdfPTable(3);
+                    table.setWidthPercentage(100);
+                    table.setWidths(new int[]{2, 3, 5});
+
+                    Stream.of("Data", "Titolo", "Descrizione").forEach(header -> {
+                        PdfPCell cell = new PdfPCell(new Phrase(header, boldFont));
+                        cell.setBackgroundColor(Color.LIGHT_GRAY);
+                        table.addCell(cell);
+                    });
+
+                    for (var item : trip.getItinerary()) {
+                        table.addCell(item.getDate() != null ? item.getDate().toString() : "");
+                        table.addCell(item.getTitle() != null ? item.getTitle() : "");
+                        table.addCell(item.getDescription() != null ? item.getDescription() : "");
+                    }
+
+                    document.add(table);
+                }
+
+                document.add(Chunk.NEWLINE);
             }
 
-            document.add(table);
             document.close();
         } catch (Exception e) {
             throw new RuntimeException("Errore durante la generazione del PDF", e);

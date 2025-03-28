@@ -1,8 +1,11 @@
 package com.travelmate.dto;
 
+import com.travelmate.entity.ItineraryItem;
 import lombok.AllArgsConstructor;
 import lombok.Data;
+
 import java.time.LocalDate;
+import java.util.List;
 
 @Data
 @AllArgsConstructor
@@ -13,5 +16,8 @@ public class TripExportResponse {
     private LocalDate endDate;
     private String description;
     private String imageUrl;
-    private String username; // solo questo del proprietario
+    private String username; // proprietario del viaggio
+
+    // 🟢 Aggiunta lista tappe
+    private List<ItineraryItem> itinerary;
 }

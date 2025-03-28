@@ -9,6 +9,7 @@ import {
   exportTripsPdf,
   exportTripsCsv
 } from '../api';
+import { fetchWeather } from '../utils/weatherApi';
 import './Dashboard.css';
 
 const Dashboard = () => {
@@ -17,9 +18,13 @@ const Dashboard = () => {
   const navigate = useNavigate();
 
   const [trips, setTrips] = useState([]);
+  const [weather, setWeather] = useState(null);
+  const [weatherLoading, setWeatherLoading] = useState(false);
+
   const [formData, setFormData] = useState({ destination: '', date: '', endDate: '', notes: '', itinerary: [] });
   const [selectedTrip, setSelectedTrip] = useState(null);
   const [searchTerm, setSearchTerm] = useState("");
+  const [newStep, setNewStep] = useState({ title: '', description: '', date: '' });
 
   const fetchTrips = async () => {
     try {
@@ -37,8 +42,44 @@ const Dashboard = () => {
     }
   }, [token]);
 
+  useEffect(() => {
+    const loadWeather = async () => {
+      if (formData.destination) {
+        setWeatherLoading(true);
+        try {
+          const data = await fetchWeather(formData.destination);
+          setWeather(data);
+        } catch (err) {
+          console.error("Errore meteo:", err);
+          setWeather(null);
+        }
+        setWeatherLoading(false);
+      }
+    };
+    loadWeather();
+  }, [formData.destination]);
+
   const handleChange = (e) => {
     setFormData({ ...formData, [e.target.name]: e.target.value });
+  };
+
+  const handleNewStepChange = (e) => {
+    setNewStep({ ...newStep, [e.target.name]: e.target.value });
+  };
+
+  const addItineraryStep = () => {
+    if (!newStep.title || !newStep.date) return alert("Compila almeno titolo e data");
+    setFormData({
+      ...formData,
+      itinerary: [...formData.itinerary, newStep]
+    });
+    setNewStep({ title: '', description: '', date: '' });
+  };
+
+  const removeItineraryStep = (index) => {
+    const updated = [...formData.itinerary];
+    updated.splice(index, 1);
+    setFormData({ ...formData, itinerary: updated });
   };
 
   const resetForm = () => {
@@ -133,7 +174,19 @@ const Dashboard = () => {
                       <span className="badge bg-primary float-end">{trip.date}</span>
                     </h5>
                     <p className="card-text">{trip.notes}</p>
-                    <div className="d-flex justify-content-end gap-2">
+
+                    {trip.itinerary?.length > 0 && (
+                      <ul className="list-group list-group-flush mt-2">
+                        {trip.itinerary.map((step, index) => (
+                          <li key={index} className="list-group-item">
+                            <strong>{step.title}</strong> – {step.date} <br />
+                            <small>{step.description}</small>
+                          </li>
+                        ))}
+                      </ul>
+                    )}
+
+                    <div className="d-flex justify-content-end gap-2 mt-3">
                       <button className="btn btn-sm btn-outline-primary" onClick={() => handleEdit(trip)}>Modifica</button>
                       <button className="btn btn-sm btn-outline-danger" onClick={() => handleDelete(trip.id)}>Elimina</button>
                     </div>
@@ -158,6 +211,33 @@ const Dashboard = () => {
                 required
               />
             </div>
+
+            {weatherLoading && (
+              <div className="col-md-8 mb-3">
+                <div className="alert alert-secondary">
+                  ⏳ Caricamento meteo in corso...
+                </div>
+              </div>
+            )}
+
+            {weather && (
+              <div className="col-md-12 mb-3">
+                <div className="alert alert-info d-flex align-items-center gap-3">
+                  <img
+                    src={`https://openweathermap.org/img/wn/${weather.icon}@2x.png`}
+                    alt="Icona meteo"
+                    style={{ width: 50 }}
+                  />
+                  <div>
+                    <strong>{weather.name}</strong><br />
+                    ☁️ {weather.description.charAt(0).toUpperCase() + weather.description.slice(1)}<br />
+                    🌡️ {weather.temp}°C | 💧 {weather.humidity}% | 🌬️ {weather.wind} m/s
+                  </div>
+                </div>
+              </div>
+            )}
+
+
             <div className="col-md-4 mb-3">
               <label className="form-label">Data Inizio</label>
               <input
@@ -182,7 +262,7 @@ const Dashboard = () => {
           </div>
 
           <div className="mb-3">
-            <label className="form-label">Note</label>
+            <label className="form-label">Descrizione</label>
             <textarea
               className="form-control"
               name="notes"
@@ -190,6 +270,62 @@ const Dashboard = () => {
               value={formData.notes}
               onChange={handleChange}
             ></textarea>
+          </div>
+
+          <div className="mb-3">
+            <label className="form-label">Tappe dell'itinerario</label>
+            <div className="row mb-2">
+              <div className="col-md-4">
+                <input
+                  type="text"
+                  className="form-control"
+                  name="title"
+                  placeholder="Tappa"
+                  value={newStep.title}
+                  onChange={handleNewStepChange}
+                />
+              </div>
+              <div className="col-md-4">
+                <input
+                  type="text"
+                  className="form-control"
+                  name="description"
+                  placeholder="Descrizione"
+                  value={newStep.description}
+                  onChange={handleNewStepChange}
+                />
+              </div>
+              <div className="col-md-3">
+                <input
+                  type="date"
+                  className="form-control"
+                  name="date"
+                  value={newStep.date}
+                  onChange={handleNewStepChange}
+                />
+              </div>
+              <div className="col-md-1 d-grid">
+                <button type="button" className="btn btn-outline-success" onClick={addItineraryStep}>➕</button>
+              </div>
+            </div>
+
+            {formData.itinerary.length > 0 && (
+              <ul className="list-group">
+                {formData.itinerary.map((step, index) => (
+                  <li key={index} className="list-group-item d-flex justify-content-between align-items-start">
+                    <div>
+                      <strong>{step.title}</strong> – {step.date} <br />
+                      <small>{step.description}</small>
+                    </div>
+                    <button
+                      type="button"
+                      className="btn btn-sm btn-outline-danger"
+                      onClick={() => removeItineraryStep(index)}
+                    >✖</button>
+                  </li>
+                ))}
+              </ul>
+            )}
           </div>
 
           <div className="d-flex gap-2">
