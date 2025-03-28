@@ -1,0 +1,95 @@
+import React, { useState } from 'react';
+import { login, register } from '../api';
+
+const WelcomePage = () => {
+  const [isLogin, setIsLogin] = useState(true);
+  const [formData, setFormData] = useState({
+    username: '',
+    email: '',
+    password: ''
+  });
+
+  const handleChange = (e) => {
+    setFormData({ ...formData, [e.target.name]: e.target.value });
+  };
+
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+
+    try {
+      if (isLogin) {
+        const res = await login({
+          username: formData.username,
+          password: formData.password,
+        });
+        localStorage.setItem("token", res.data.token);
+        alert("Login avvenuto con successo!");
+      } else {
+        const res = await register(formData);
+        alert("Registrazione completata!");
+      }
+    } catch (err) {
+      alert(isLogin ? "Login fallito. Controlla le credenziali." : "Errore durante la registrazione.");
+    }
+  };
+
+  return (
+    <div className="container mt-5">
+      <h2 className="mb-4 text-center">
+        {isLogin ? "Accedi" : "Registrati"}
+      </h2>
+      <form onSubmit={handleSubmit}>
+        <div className="mb-3">
+          <label>Username</label>
+          <input
+            className="form-control"
+            type="text"
+            name="username"
+            value={formData.username}
+            onChange={handleChange}
+            required
+          />
+        </div>
+
+        {!isLogin && (
+          <div className="mb-3">
+            <label>Email</label>
+            <input
+              className="form-control"
+              type="email"
+              name="email"
+              value={formData.email}
+              onChange={handleChange}
+              required
+            />
+          </div>
+        )}
+
+        <div className="mb-3">
+          <label>Password</label>
+          <input
+            className="form-control"
+            type="password"
+            name="password"
+            value={formData.password}
+            onChange={handleChange}
+            required
+          />
+        </div>
+
+        <button className={`btn ${isLogin ? "btn-primary" : "btn-success"}`} type="submit">
+          {isLogin ? "Login" : "Registrati"}
+        </button>
+      </form>
+
+      <p className="mt-3 text-center">
+        {isLogin ? "Non hai un account?" : "Hai già un account?"}{" "}
+        <button className="btn btn-link" onClick={() => setIsLogin(!isLogin)}>
+          {isLogin ? "Registrati" : "Accedi"}
+        </button>
+      </p>
+    </div>
+  );
+};
+
+export default WelcomePage;
