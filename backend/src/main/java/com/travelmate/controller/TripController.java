@@ -35,6 +35,10 @@ public class TripController {
     ) {
         String username = userDetails.getUsername();
         List<Trip> trips = tripService.getTripsByUsername(username, destination);
+
+        // 🔥 Fix loop infinito: togliamo il riferimento al "user" per evitare ricorsione
+        trips.forEach(trip -> trip.setUser(null));
+
         return ResponseEntity.ok(trips);
     }
 
@@ -72,7 +76,6 @@ public class TripController {
                 .body(csv);
     }
 
-    // ✅ NUOVO endpoint PDF
     @GetMapping("/export/pdf")
     public ResponseEntity<byte[]> exportTripsPdf(@AuthenticationPrincipal UserDetails userDetails) {
         String username = userDetails.getUsername();

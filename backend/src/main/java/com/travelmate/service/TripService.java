@@ -30,6 +30,15 @@ public class TripService {
         User user = userRepository.findByUsername(username)
                 .orElseThrow(() -> new RuntimeException("Utente non trovato"));
         trip.setUser(user);
+
+        // ✅ Check se date sono nulle, allora imposta start = end = oggi
+        if (trip.getStartDate() == null) {
+            trip.setStartDate(java.time.LocalDate.now());
+        }
+        if (trip.getEndDate() == null) {
+            trip.setEndDate(trip.getStartDate());
+        }
+
         return tripRepository.save(trip);
     }
 
@@ -115,7 +124,6 @@ public class TripService {
         return csv.toString().getBytes(StandardCharsets.UTF_8);
     }
 
-    // ✅ PDF Export
     public byte[] exportTripsAsPdf(String username) {
         List<TripExportResponse> trips = exportTrips(username);
 
@@ -144,8 +152,8 @@ public class TripService {
 
             for (TripExportResponse trip : trips) {
                 table.addCell(trip.getDestination());
-                table.addCell(String.valueOf(trip.getStartDate()));
-                table.addCell(String.valueOf(trip.getEndDate()));
+                table.addCell(trip.getStartDate() != null ? trip.getStartDate().toString() : "");
+                table.addCell(trip.getEndDate() != null ? trip.getEndDate().toString() : "");
                 table.addCell(trip.getDescription() != null ? trip.getDescription() : "");
             }
 

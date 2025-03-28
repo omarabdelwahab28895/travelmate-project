@@ -2,7 +2,6 @@ package com.travelmate.entity;
 
 import jakarta.persistence.*;
 import lombok.*;
-
 import java.time.LocalDate;
 import java.util.List;
 
@@ -18,18 +17,22 @@ public class Trip {
     private Long id;
 
     private String destination;
+
+    // 🟢 Usa questi due campi per l'intervallo viaggio
     private LocalDate startDate;
     private LocalDate endDate;
+
+    // 🟢 Salva le note o descrizione
     private String description;
 
-    // ✅ Campo per l'immagine
+    // 🟢 Se usi immagini
     private String imageUrl;
 
     @ManyToOne
     @JoinColumn(name = "user_id")
     private User user;
 
-    // ✅ Lista delle tappe dell'itinerario
+    // (Facoltativo) Lista di tappe
     @OneToMany(mappedBy = "trip", cascade = CascadeType.ALL, orphanRemoval = true)
     private List<ItineraryItem> itineraryItems;
 }
