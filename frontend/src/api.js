@@ -25,6 +25,8 @@ export const getTrips = async (token) => {
     withCredentials: true,
   });
 
+  console.log("Risposta completa dal backend:", res); // Stampa la risposta completa
+  
   return Array.isArray(res.data) ? res.data : [];
 };
 

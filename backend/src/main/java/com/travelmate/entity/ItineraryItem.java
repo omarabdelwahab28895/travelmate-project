@@ -1,5 +1,6 @@
 package com.travelmate.entity;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import jakarta.persistence.*;
 import lombok.*;
 
@@ -20,6 +21,9 @@ public class ItineraryItem {
     private String description;
     private LocalDate date;
 
+    //aggiungo @JsonIgnore e @ToString.Exclude
+    @ToString.Exclude
+    @JsonIgnore
     @ManyToOne
     @JoinColumn(name = "trip_id")
     private Trip trip;

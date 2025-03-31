@@ -7,12 +7,15 @@ import com.lowagie.text.pdf.PdfPTable;
 import com.lowagie.text.pdf.PdfWriter;
 import com.travelmate.dto.TripExportResponse;
 import com.travelmate.dto.UpdateTripRequest;
+import com.travelmate.entity.ItineraryItem;
 import com.travelmate.entity.Trip;
 import com.travelmate.entity.User;
+import com.travelmate.repository.ItineraryItemRepository;
 import com.travelmate.repository.TripRepository;
 import com.travelmate.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
+import org.springframework.web.bind.annotation.PostMapping;
 
 import java.io.ByteArrayOutputStream;
 import java.nio.charset.StandardCharsets;
@@ -20,12 +23,17 @@ import java.util.List;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
+import java.time.format.DateTimeFormatter;
+
 @Service
 @RequiredArgsConstructor
 public class TripService {
 
     private final TripRepository tripRepository;
     private final UserRepository userRepository;
+
+    //x aggiungere tappe alle card
+    private final ItineraryItemRepository itineraryItemRepository;
 
     public Trip createTrip(String username, Trip trip) {
         User user = userRepository.findByUsername(username)
@@ -83,6 +91,17 @@ public class TripService {
         if (request.getDescription() != null) trip.setDescription(request.getDescription());
         if (request.getImageUrl() != null) trip.setImageUrl(request.getImageUrl());
 
+        // 🔁 Gestione tappe
+        if (request.getItineraryItems() != null) {
+            // Pulizia attuale
+            trip.getItineraryItems().clear();
+
+            // Aggiunta nuove tappe
+            for (ItineraryItem item : request.getItineraryItems()) {
+                item.setTrip(trip); // 🔑 collega la tappa al viaggio
+                trip.getItineraryItems().add(item);
+            }
+        }
         return tripRepository.save(trip);
     }
 
@@ -99,6 +118,7 @@ public class TripService {
 
     public List<TripExportResponse> exportTrips(String username) {
         List<Trip> trips = getTripsByUsername(username, null);
+
         return trips.stream()
                 .map(trip -> new TripExportResponse(
                         trip.getId(),
@@ -117,7 +137,7 @@ public class TripService {
         List<TripExportResponse> trips = exportTrips(username);
 
         StringBuilder csv = new StringBuilder();
-        csv.append("Destinazione,Data Inizio,Data Fine,Descrizione,Tappe\n");
+        csv.append("Destinazione,Data Inizio,Data Fine,Descrizione\n");
 
         for (TripExportResponse trip : trips) {
             String itinerary = trip.getItinerary().stream()
@@ -153,37 +173,57 @@ public class TripService {
             document.add(title);
             document.add(Chunk.NEWLINE);
 
+            // Formatter per la data
+            DateTimeFormatter formatter = DateTimeFormatter.ofPattern("dd/MM/yyyy");
+
+            // Creazione della tabella
+            PdfPTable table = new PdfPTable(4);
+            table.setWidthPercentage(100);
+            table.setWidths(new int[]{3, 2, 2, 5});
+
+            // Intestazioni della tabella
+            table.addCell(new PdfPCell(new Phrase("Città", boldFont)));
+            table.addCell(new PdfPCell(new Phrase("Data Inizio", boldFont)));
+            table.addCell(new PdfPCell(new Phrase("Data Fine", boldFont)));
+            table.addCell(new PdfPCell(new Phrase("La tua opinione", boldFont)));
+
+
             for (TripExportResponse trip : trips) {
-                Paragraph tripTitle = new Paragraph(trip.getDestination() + " (" + trip.getStartDate() + " - " + trip.getEndDate() + ")", boldFont);
-                document.add(tripTitle);
+                // Aggiungi una riga per ogni viaggio
+                table.addCell(trip.getDestination() != null ? trip.getDestination() : "");
+                table.addCell(trip.getStartDate() != null ? trip.getStartDate().format(formatter) : "");
+                table.addCell(trip.getEndDate() != null ? trip.getEndDate().format(formatter) : "");
+                table.addCell(trip.getDescription() != null ? trip.getDescription() : "");
+            }
 
-                if (trip.getDescription() != null) {
-                    document.add(new Paragraph("Descrizione: " + trip.getDescription(), normalFont));
-                }
+            // Aggiungi la tabella al documento
+            document.add(table);
 
+            // Dettagli aggiuntivi sulle tappe
+            /*for (TripExportResponse trip : trips) {
                 if (trip.getItinerary() != null && !trip.getItinerary().isEmpty()) {
+                    document.add(Chunk.NEWLINE);
                     document.add(new Paragraph("Tappe:", boldFont));
-                    PdfPTable table = new PdfPTable(3);
-                    table.setWidthPercentage(100);
-                    table.setWidths(new int[]{2, 3, 5});
 
-                    Stream.of("Data", "Titolo", "Descrizione").forEach(header -> {
+                    PdfPTable itineraryTable = new PdfPTable(3);
+                    itineraryTable.setWidthPercentage(100);
+                    itineraryTable.setWidths(new int[]{2, 3, 5});
+
+                    Stream.of("Data", "Titolo", "La tua opinione").forEach(header -> {
                         PdfPCell cell = new PdfPCell(new Phrase(header, boldFont));
                         cell.setBackgroundColor(Color.LIGHT_GRAY);
-                        table.addCell(cell);
+                        itineraryTable.addCell(cell);
                     });
 
                     for (var item : trip.getItinerary()) {
-                        table.addCell(item.getDate() != null ? item.getDate().toString() : "");
-                        table.addCell(item.getTitle() != null ? item.getTitle() : "");
-                        table.addCell(item.getDescription() != null ? item.getDescription() : "");
+                        itineraryTable.addCell(item.getDate() != null ? item.getDate().toString() : "");
+                        itineraryTable.addCell(item.getTitle() != null ? item.getTitle() : "");
+                        itineraryTable.addCell(item.getDescription() != null ? item.getDescription() : "");
                     }
 
-                    document.add(table);
+                    document.add(itineraryTable);
                 }
-
-                document.add(Chunk.NEWLINE);
-            }
+            }*/
 
             document.close();
         } catch (Exception e) {
@@ -192,4 +232,5 @@ public class TripService {
 
         return out.toByteArray();
     }
+
 }

@@ -21,14 +21,15 @@ const Dashboard = () => {
   const [weather, setWeather] = useState(null);
   const [weatherLoading, setWeatherLoading] = useState(false);
 
-  const [formData, setFormData] = useState({ destination: '', date: '', endDate: '', notes: '', itinerary: [] });
+  const [formData, setFormData] = useState({ destination: '', startDate: '', endDate: '', description: '', itineraryItems: [] });
   const [selectedTrip, setSelectedTrip] = useState(null);
   const [searchTerm, setSearchTerm] = useState("");
-  const [newStep, setNewStep] = useState({ title: '', description: '', date: '' });
+  const [newStep, setNewStep] = useState({ title: '',  date: '' });
 
   const fetchTrips = async () => {
     try {
       const data = await getTrips(token);
+      console.log("Dati ricevuti dal backend:", data);
       setTrips(data);
     } catch (err) {
       console.error("Errore caricamento viaggi:", err);
@@ -71,19 +72,19 @@ const Dashboard = () => {
     if (!newStep.title || !newStep.date) return alert("Compila almeno titolo e data");
     setFormData({
       ...formData,
-      itinerary: [...formData.itinerary, newStep]
+      itineraryItems: [...formData.itineraryItems, newStep]
     });
-    setNewStep({ title: '', description: '', date: '' });
+    setNewStep({ title: '',  date: '' });
   };
 
   const removeItineraryStep = (index) => {
-    const updated = [...formData.itinerary];
+    const updated = [...formData.itineraryItems];
     updated.splice(index, 1);
-    setFormData({ ...formData, itinerary: updated });
+    setFormData({ ...formData, itineraryItems: updated });
   };
 
   const resetForm = () => {
-    setFormData({ destination: '', date: '', endDate: '', notes: '', itinerary: [] });
+    setFormData({ destination: '', startDate: '', endDate: '', description: '', itineraryItems: [] });
     setSelectedTrip(null);
   };
 
@@ -102,10 +103,10 @@ const Dashboard = () => {
   const handleEdit = (trip) => {
     setFormData({
       destination: trip.destination,
-      date: trip.date,
+      startDate: trip.startDate,
       endDate: trip.endDate || '',
-      notes: trip.notes,
-      itinerary: trip.itinerary || []
+      description: trip.description,
+      itineraryItems: trip.itineraryItems || []
     });
     setSelectedTrip(trip);
   };
@@ -169,18 +170,21 @@ const Dashboard = () => {
               <div key={trip.id} className="col-md-6 mb-4">
                 <div className="card border-primary shadow-sm">
                   <div className="card-body">
-                    <h5 className="card-title">
-                      {trip.destination}
-                      <span className="badge bg-primary float-end">{trip.date}</span>
-                    </h5>
-                    <p className="card-text">{trip.notes}</p>
-
-                    {trip.itinerary?.length > 0 && (
+                  <h5 className="card-title mb-1">
+                    <strong>{trip.destination}</strong>
+                  </h5>
+                      <small className="text-muted d-block mb-2">
+                          📅 dal {trip.startDate} al {trip.endDate}
+                      </small>
+                  <p className="card-text">{trip.description}</p>
+                    {trip.itineraryItems?.length > 0 && (
                       <ul className="list-group list-group-flush mt-2">
-                        {trip.itinerary.map((step, index) => (
+                        {trip.itineraryItems.map((step, index) => (
                           <li key={index} className="list-group-item">
-                            <strong>{step.title}</strong> – {step.date} <br />
-                            <small>{step.description}</small>
+                            <div>
+                              <strong>{step.title}</strong>
+                            </div>
+                            <small className="text-muted">{step.date}</small>
                           </li>
                         ))}
                       </ul>
@@ -243,9 +247,9 @@ const Dashboard = () => {
               <input
                 type="date"
                 className="form-control"
-                name="date"
-                value={formData.date}
-                onChange={handleChange}
+                name="startDate"
+                value={formData.startDate}
+                onChange={(e) => setFormData({ ...formData, startDate: e.target.value })}
                 required
               />
             </div>
@@ -265,9 +269,9 @@ const Dashboard = () => {
             <label className="form-label">Descrizione</label>
             <textarea
               className="form-control"
-              name="notes"
+              name="description"
               rows="3"
-              value={formData.notes}
+              value={formData.description}
               onChange={handleChange}
             ></textarea>
           </div>
@@ -285,16 +289,7 @@ const Dashboard = () => {
                   onChange={handleNewStepChange}
                 />
               </div>
-              <div className="col-md-4">
-                <input
-                  type="text"
-                  className="form-control"
-                  name="description"
-                  placeholder="Descrizione"
-                  value={newStep.description}
-                  onChange={handleNewStepChange}
-                />
-              </div>
+              
               <div className="col-md-3">
                 <input
                   type="date"
@@ -309,13 +304,12 @@ const Dashboard = () => {
               </div>
             </div>
 
-            {formData.itinerary.length > 0 && (
+            {formData.itineraryItems.length > 0 && (
               <ul className="list-group">
-                {formData.itinerary.map((step, index) => (
+                {formData.itineraryItems.map((step, index) => (
                   <li key={index} className="list-group-item d-flex justify-content-between align-items-start">
                     <div>
                       <strong>{step.title}</strong> – {step.date} <br />
-                      <small>{step.description}</small>
                     </div>
                     <button
                       type="button"

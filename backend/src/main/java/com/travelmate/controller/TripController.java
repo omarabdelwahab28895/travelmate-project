@@ -36,6 +36,10 @@ public class TripController {
         String username = userDetails.getUsername();
         List<Trip> trips = tripService.getTripsByUsername(username, destination);
 
+        // 🔥 Log per verificare i viaggi recuperati
+        System.out.println("Viaggi recuperati per l'utente: " + username);
+        trips.forEach(trip -> System.out.println("Viaggio: " + trip.getDestination()));
+
         // 🔥 Fix loop infinito: togliamo il riferimento al "user" per evitare ricorsione
         trips.forEach(trip -> trip.setUser(null));
 

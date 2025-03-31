@@ -5,6 +5,8 @@ import org.springframework.data.jpa.repository.JpaRepository;
 
 import java.util.List;
 
+//aggiorno con IgnoreCase
+
 public interface TripRepository extends JpaRepository<Trip, Long> {
     List<Trip> findByUserUsernameOrderByStartDateAsc(String username);
     List<Trip> findByUserUsernameAndDestinationContainingIgnoreCaseOrderByStartDateAsc(String username, String destination);
