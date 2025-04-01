@@ -33,7 +33,9 @@ public class Trip {
     @JoinColumn(name = "user_id")
     private User user;
 
-    // (Facoltativo) Lista di tappe
+    // Lista di tappe
     @OneToMany(mappedBy = "trip", cascade = CascadeType.ALL, orphanRemoval = true)
     private List<ItineraryItem> itineraryItems;
+
+
 }

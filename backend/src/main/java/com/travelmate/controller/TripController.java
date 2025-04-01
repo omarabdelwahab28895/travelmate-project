@@ -106,4 +106,6 @@ public class TripController {
         tripService.deleteTrip(id, username);
         return ResponseEntity.noContent().build();
     }
+
+
 }

@@ -89,3 +89,37 @@ export const exportTripsCsv = async (token) => {
   document.body.appendChild(link);
   link.click();
 };
+
+// ⭐ Ottieni tutte le recensioni per una tappa
+export const getItineraryReviews = async (itemId, token) => {
+  const res = await axiosInstance.get(`/reviews/${itemId}`, {
+    headers: {
+      Authorization: `Bearer ${token}`,
+    },
+    withCredentials: true,
+  });
+  return res.data;
+};
+
+
+// ➕ Aggiungi una recensione a una tappa
+export const addItineraryReview = async (itemId, review, token) => {
+  const res = await axiosInstance.post(`/reviews/${itemId}`, review, {
+    headers: {
+      Authorization: `Bearer ${token}`,
+    },
+    withCredentials: true,
+  });
+  return res.data;
+};
+
+// 🗑️ Elimina una recensione di una tappa
+export const deleteItineraryReview = async (reviewId, token) => {
+  const res = await axiosInstance.delete(`/reviews/delete/${reviewId}`, {
+    headers: {
+      Authorization: `Bearer ${token}`,
+    },
+    withCredentials: true,
+  });
+  return res.data;
+};

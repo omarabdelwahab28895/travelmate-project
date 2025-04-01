@@ -47,4 +47,10 @@ public class JwtUtils {
             return false;
         }
     }
+
+    public boolean validateToken(String token, org.springframework.security.core.userdetails.UserDetails userDetails) {
+        final String username = extractUsername(token);
+        return (username.equals(userDetails.getUsername()) && validateToken(token));
+    }
+
 }

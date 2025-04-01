@@ -9,6 +9,7 @@ import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
+import java.security.Principal;
 
 @RestController
 @RequestMapping("/api/reviews")
@@ -22,8 +23,9 @@ public class ItineraryReviewController {
     public ResponseEntity<ItineraryReview> addReview(
             @PathVariable Long itemId,
             @RequestBody ItineraryReview review,
-            @AuthenticationPrincipal UserDetails userDetails) {
+            @AuthenticationPrincipal UserDetails userDetails, Principal principal) {
 
+        String username = principal.getName(); // 👈 ottieni il nome utente direttamente dal token
         ItineraryReview savedReview = reviewService.addReview(itemId, review, userDetails.getUsername());
         return ResponseEntity.ok(savedReview);
     }
@@ -39,9 +41,11 @@ public class ItineraryReviewController {
     @DeleteMapping("/delete/{reviewId}")
     public ResponseEntity<Void> deleteReview(
             @PathVariable Long reviewId,
-            @AuthenticationPrincipal UserDetails userDetails) {
+            @AuthenticationPrincipal UserDetails userDetails, Principal principal) {
 
-        reviewService.deleteReview(reviewId, userDetails.getUsername());
+
+        //reviewService.deleteReview(reviewId, userDetails.getUsername());
+        reviewService.deleteReview(reviewId, principal.getName());
         return ResponseEntity.noContent().build();
     }
 }

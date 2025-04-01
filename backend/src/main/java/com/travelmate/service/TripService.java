@@ -199,6 +199,8 @@ public class TripService {
             // Aggiungi la tabella al documento
             document.add(table);
 
+
+
             // Dettagli aggiuntivi sulle tappe
             /*for (TripExportResponse trip : trips) {
                 if (trip.getItinerary() != null && !trip.getItinerary().isEmpty()) {

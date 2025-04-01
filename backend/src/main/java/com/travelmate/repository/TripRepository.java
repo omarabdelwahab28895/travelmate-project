@@ -12,3 +12,4 @@ public interface TripRepository extends JpaRepository<Trip, Long> {
     List<Trip> findByUserUsernameAndDestinationContainingIgnoreCaseOrderByStartDateAsc(String username, String destination);
     long countByUserUsername(String username);
 }
+
